@@ -75,3 +75,7 @@ eval/reports/
 # --- Sample/source manuals (large binaries; keep locally, not in git) ---
 data/manuals/*
 !data/manuals/.gitkeep
+
+# --- Spike outputs ---
+spike/output*/
+spike/*.log

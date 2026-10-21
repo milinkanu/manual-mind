@@ -1,0 +1,6 @@
+docling
+pymupdf
+pillow
+anthropic
+pandas
+python-dotenv
