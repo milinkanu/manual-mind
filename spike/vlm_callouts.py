@@ -5,6 +5,7 @@ import sys
 
 VISION_MODEL = "claude-sonnet-5-5"  # bump to claude-opus-5-5 if callout reading is poor
 MAX_VISION_DIM = 1568
+USAGE = {"calls": 0, "input_tokens": 0, "output_tokens": 0}  # running totals, printed in the run report
 
 CALLOUT_TOOL = {
     "name": "report_callouts",
@@ -67,6 +68,9 @@ def extract_callouts(img, client) -> list[dict]:
                 {"type": "text", "text": CALLOUT_PROMPT},
             ]}],
         )
+        USAGE["calls"] += 1
+        USAGE["input_tokens"] += resp.usage.input_tokens
+        USAGE["output_tokens"] += resp.usage.output_tokens
         block = next(b for b in resp.content if b.type == "tool_use")
         return [{"number": str(c["number"]).strip(), "x": round(c["x"] * scale), "y": round(c["y"] * scale)}
                 for c in block.input.get("callouts", [])]

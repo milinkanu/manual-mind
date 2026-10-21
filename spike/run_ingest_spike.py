@@ -130,6 +130,11 @@ def main() -> None:
         print("Vision: skipped (--skip-vlm)")
     else:
         print(f"Vision calls: {vision_calls} ({vision_errors} errors, model={vlm.VISION_MODEL})")
+        u = vlm.USAGE
+        if u["calls"]:
+            print(f"Vision tokens: {u['input_tokens']:,} in / {u['output_tokens']:,} out "
+                  f"({u['input_tokens'] // u['calls']:,} in + {u['output_tokens'] // u['calls']:,} out per call; "
+                  f"x100 figures = {100 * u['input_tokens'] // u['calls']:,} in / {100 * u['output_tokens'] // u['calls']:,} out)")
         print(f"Figures with zero callouts: {sum(1 for f in figures if f['image_path'] and not f['callouts'])}")
         print(f"Callouts extracted: {len(callouts)}")
         print(f"Callouts matched to a part: {matched}  (unique part: {matched - ambiguous - no_pn}, "
