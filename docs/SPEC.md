@@ -64,13 +64,16 @@ A throwaway spike (`spike/`, Docling + Claude vision) ran steps 2, 4, 5 and 6 on
 3. **Match on reference number, and keep every row.** One key number maps to one row per model variant (Canon callout 9 → 5 operation-panel part numbers). Store all candidates with their remarks/model, and let the session model (step 7) pick one. Never take the first row.
 4. **Unmatched labels are normal.** HP `A##` labels are parts that are not field-replaceable, so they have no table row. Measure linking quality as *table coverage* (reference numbers in a parts table found in a figure), not as the share of extracted callouts that matched.
 5. **Table classification needs care.** Accept header variants (`Parts number`, `Part no.`); require the reference column to be mostly numeric, ignoring placeholders such as "Not shown"; treat rows like `Fig.100` as section headers, not parts.
+6. **Not every manual has callout → part data, and that is not a failure.** The Brother HL-2290 service manual (disassembly chapter, pp.118–178) labels parts by name on leader lines ("Back cover", "Outer chute ASSY") and has no parts table at all; Brother publishes its parts list as a separate document. The pipeline ran without errors and linked nothing, as it should. Two requirements follow. First, the "unlinked references above 10% fail the job" gate must only count callouts in a manual that has a parts table. A manual without one gets its own status ("no parts data"), not a failed ingest. Second, name-labelled figures need a different link (figure → the procedure text that names its parts), which belongs to the procedure → figure link, not to callout → part.
+7. **Only run the callout vision pass on figures followed by a parts table.** Only 9 of 52 HP figures and 7 of 32 Canon figures have a parts table on the same or next page, yet they hold 173 of 183 and 123 of 125 of the callouts found. The rest are procedure illustrations, whose numbers are step markers. On Brother the pass cost 71 calls (154k input tokens, about 2,200 per call) and returned 74 numbers, none usable: some are section numbers (`9.10`) or lists (`17,18,19`), and I did not check the others. Classify tables first, then send only the figures in front of a parts table to the vision model. This cuts vision calls by roughly 80% on HP and Canon, and to zero on Brother.
 
 | Manual | Numeric callouts matched | Parts-table coverage |
 | --- | --- | --- |
 | HP M402 repair manual, pp.1270–1328 | 68 / 87 (10 misses are step numbers on procedure figures; 9 are on the 550-sheet feeder figures, whose tables list only 1–3 orderable parts, so probably non-orderable parts, checked for one of the two figures) | 65 / 66 |
 | Canon LBP6670dn parts catalog, pp.1–46 | 120 / 123 | 73 / 76 |
+| Brother HL-2290 service manual, pp.118–178 | n/a: no parts tables (71 figures, 74 vision labels, none usable) | 0 / 0 |
 
-Caveats: two manuals, one run each, spot-checked by eye on a handful of figures. Brother and Epson drawing styles are untested.
+Caveats: three manuals, one run each, spot-checked by eye on a handful of figures. Epson is untested (the file we have is a different model's manual), and no Brother parts list was available.
 
 ## Retrieval
 

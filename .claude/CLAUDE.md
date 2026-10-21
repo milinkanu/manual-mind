@@ -4,9 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Pre-implementation. The repo currently contains only `ManualMind — Engineering Spec.md` (the full design doc) and `Service Manual.pdf` (a sample printer service manual for ingestion/testing). No code, `docker-compose.yml`, or package manifests exist yet. **Read the spec file in full before writing any code** — it is the source of truth for architecture, schemas, and targets; this CLAUDE.md only summarizes it.
+Early stage. The design doc is `docs/SPEC.md` — the source of truth for architecture, schemas, and targets; **read it before writing any code** (this CLAUDE.md only summarizes it). The only code so far is `spike/`, a throwaway feasibility spike (Docling + Claude vision) for ingestion steps 2, 4, 5 and 6. Its findings are recorded in the spec under "Callout linking rules (from the ingestion spike)". None of the planned production directories (`ingest/`, `api/`, …), `docker-compose.yml` or a project-wide package manifest exist yet.
 
-When bootstrapping the repo, follow the layout and milestone order defined in the spec (see "Repo layout and build milestones" section) rather than inventing a different structure.
+When building the real modules, follow the layout and milestone order defined in the spec (see "Repo layout and build milestones") rather than inventing a different structure. Reuse the spike's lessons, not its code structure — it is meant to be deleted once `ingest/` replaces it.
+
+### Sample manuals
+
+PDFs live in `data/manuals/` and are gitignored (large). Some names are misleading: `epson-l3110-service-manual.pdf` is actually the Epson Artisan 800 / PX800FW manual, and the SHA-256-named PDF is the HP M402 troubleshooting manual. The HP repair manual (1,328 pages) keeps its parts diagrams and tables at the very end (pp. ~1293–1309), so a default `--pages 1-75` finds nothing useful. The Canon parts catalog (46 pages) and the HP manual are the two manuals with callout → parts-table data.
+
+### Working with the spike
+
+- Setup: `python -m venv spike/.venv`, then `spike\.venv\Scripts\pip install -r spike/requirements.txt`. Docling is heavy (pulls torch, downloads models on first run).
+- `ANTHROPIC_API_KEY` goes in `spike/.env` (gitignored). Never commit it.
+- Run from `spike/`: `.venv\Scripts\python run_ingest_spike.py --pages 1270-1328 --out-dir output [--pdf PATH] [--skip-vlm] [--reuse-cache] [--max-figures N]`. A ~60-page Docling parse takes ~8 min; it is cached in `<out-dir>/docling_cache.json`, and `--reuse-cache` re-runs only vision + linking (~1.5 min). The cache is keyed on PDF hash + page range, not on extraction code, so delete it after changing `docling_extract.py`.
+- Hand-check results: `python review_sample.py --out-dir <dir>`.
+- Tests: `cd spike; .venv\Scripts\python -m pytest` (one test: `-k name`). They cover the callout-linking rules.
+- Outputs (`spike/output*/`) and logs are gitignored.
+- The vision model `claude-sonnet-5-5` rejects a forced `tool_choice` and the `temperature` argument; the code uses `tool_choice: auto` plus a "you must call the tool" prompt.
 
 ## What ManualMind is
 
@@ -68,7 +82,7 @@ No agent talks to the user except through the orchestrator. Session state (`manu
 3. Section tree: heading hierarchy → `section_path` (e.g. `6 Disassembly > 6.3 Fuser unit > Removal`) on every block.
 4. Figure extraction: crop at 200 DPI to object storage; VLM pass extracts callout numbers + pixel coords + a one-line description for embedding.
 5. Table normalisation: rows become typed objects; tables classified as `parts_list`, `error_codes`, `troubleshooting`, `specs`, `other`.
-6. Linking (edges): procedure→figure, figure callout→parts-list row, error code→troubleshooting procedure, cross-reference→target section, warning/caution→procedure it precedes.
+6. Linking (edges): procedure→figure, figure callout→parts-list row, error code→troubleshooting procedure, cross-reference→target section, warning/caution→procedure it precedes. Callout→part linking has non-obvious rules (see SPEC.md "Callout linking rules"): a figure's parts table comes *after* it (never before), keep *every* model-variant row for a key number instead of the first, use a drawing-style-neutral extraction prompt, judge quality by parts-table coverage rather than the share of callouts matched, run the callout vision pass only on figures followed by a parts table (it cuts vision calls ~80%), and treat a manual with no parts table (e.g. Brother, which labels parts by name) as "no parts data", not a failed ingest.
 7. Variant tagging: model applicability (e.g. "Models A/B only") via regex + LLM fallback → `models[]` attribute on blocks.
 8. Chunking: by semantic unit (one procedure, one table row group, one figure+caption) — **not** by token count. Each chunk carries `section_path`, page, `models[]`, linked ids.
 9. Indexing: dense embeddings + BM25 into search index; nodes/edges into graph tables.
@@ -113,3 +127,17 @@ p95 < 2s for error-code lookup end to end, p95 < 5s for first streamed step, p95
 - Verifier rejects a step twice → drop it into `unverified_steps`, surface to the user (don't silently omit).
 - Retrieval below threshold → `insufficient_evidence`, never improvise an answer.
 - Partial ingestion → index what parsed, mark manual `degraded`, surface the report (don't fail the whole ingest for a partial parse, but never hide the degradation).
+
+
+## Communication Rules
+
+- Use simple, beginner-friendly English; assume basic programming knowledge.
+- Explain the purpose first, then how it works.
+- Keep responses concise, clear, and structured.
+- Explain technical terms briefly when first introduced.
+- Use analogies only when helpful.
+- For project updates, cover: **What happened, what it means, and what's next.**
+- For debugging, explain the root cause and provide actionable fixes.
+- Avoid jargon, repetition, and unnecessary details.
+- Maintain technical accuracy and mention important risks.
+- Expand step by step only when requested or necessary.
