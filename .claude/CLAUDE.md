@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Early stage. The design doc is `docs/SPEC.md` — the source of truth for architecture, schemas, and targets; **read it before writing any code** (this CLAUDE.md only summarizes it). The only code so far is `spike/`, a throwaway feasibility spike (Docling + Claude vision) for ingestion steps 2, 4, 5 and 6. Its findings are recorded in the spec under "Callout linking rules (from the ingestion spike)". None of the planned production directories (`ingest/`, `api/`, …), `docker-compose.yml` or a project-wide package manifest exist yet.
 
+**Building `ingest/`:** follow `docs/INGEST_PLAN.md`, a session-by-session plan (one feature per session, with "done when" checks, a session map to tick, and handoff notes at the bottom). Read it at the start of every ingest session. S5 (parse speed) is a go/no-go checkpoint: do not start S6 or later until its decision is recorded.
+
 When building the real modules, follow the layout and milestone order defined in the spec (see "Repo layout and build milestones") rather than inventing a different structure. Reuse the spike's lessons, not its code structure — it is meant to be deleted once `ingest/` replaces it.
 
 ### Sample manuals
