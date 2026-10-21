@@ -55,6 +55,23 @@ Ingestion converts a PDF into a typed document graph once, asynchronously, so qu
 
 Ingestion emits a report: page count, figures found, callouts linked, unlinked references, parse confidence. Unlinked references above 10% fail the job loudly instead of indexing silently.
 
+### Callout linking rules (from the ingestion spike)
+
+A throwaway spike (`spike/`, Docling + Claude vision) ran steps 2, 4, 5 and 6 on 59 pages of the HP LaserJet M402/M403/M426/M427 repair manual and the 46-page Canon imageCLASS LBP6670dn parts catalog. It pins down how callout → part linking has to work; the rules below are requirements for `ingest/linking`.
+
+1. **A figure's parts table follows it.** In both manuals the table sits on the same or a later page, never an earlier one. Linking to the nearest page in either direction mislinked callouts to the previous figure's table. Tables can run over several pages (Canon: figure on p.17, table on pp.18–19), so link a figure to every parts table between it and the next figure. The spike used a one-page window and missed one continued row.
+2. **Callout extraction must not assume a drawing style.** HP draws callouts as blue boxes and uses plain `A##` labels for non-orderable hardware; Canon uses plain numerals. A "boxed callouts only" prompt was unstable on Canon (the same figure returned 26 callouts, then 0, then 0). Use a style-neutral prompt: report every reference number joined to a part by a leader line; exclude captions and model names (`M426/M427`), connector codes (`J505`), page text and step numbers.
+3. **Match on reference number, and keep every row.** One key number maps to one row per model variant (Canon callout 9 → 5 operation-panel part numbers). Store all candidates with their remarks/model, and let the session model (step 7) pick one. Never take the first row.
+4. **Unmatched labels are normal.** HP `A##` labels are parts that are not field-replaceable, so they have no table row. Measure linking quality as *table coverage* (reference numbers in a parts table found in a figure), not as the share of extracted callouts that matched.
+5. **Table classification needs care.** Accept header variants (`Parts number`, `Part no.`); require the reference column to be mostly numeric, ignoring placeholders such as "Not shown"; treat rows like `Fig.100` as section headers, not parts.
+
+| Manual | Numeric callouts matched | Parts-table coverage |
+| --- | --- | --- |
+| HP M402 repair manual, pp.1270–1328 | 68 / 87 (10 misses are step numbers on procedure figures; 9 are on the 550-sheet feeder figures, whose tables list only 1–3 orderable parts, so probably non-orderable parts, checked for one of the two figures) | 65 / 66 |
+| Canon LBP6670dn parts catalog, pp.1–46 | 120 / 123 | 73 / 76 |
+
+Caveats: two manuals, one run each, spot-checked by eye on a handful of figures. Brother and Epson drawing styles are untested.
+
 ## Retrieval
 
 Retrieval is hybrid search plus graph expansion, so a hit on one chunk pulls in the figure, parts rows and warnings it depends on.
