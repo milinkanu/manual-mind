@@ -1,0 +1,77 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test / lint / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- Node / web demo ---
+node_modules/
+web/dist/
+web/build/
+.npm/
+.eslintcache
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Claude Code local overrides ---
+.claude/settings.local.json
+
+# --- Logs ---
+*.log
+logs/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# --- Docker / local service data (volumes mounted by docker-compose) ---
+.docker/
+pgdata/
+minio-data/
+redis-data/
+
+# --- Generated ingestion/eval artifacts ---
+data/objectstore/
+data/figures/
+eval/runs/
+eval/reports/
+*.sqlite3
+*.db
+
+# --- Sample/source manuals (large binaries; keep locally, not in git) ---
+data/manuals/*
+!data/manuals/.gitkeep
